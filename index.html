@@ -444,8 +444,7 @@
             document.getElementById('newsInput').value = examples[index];
             document.getElementById('newsInput').focus();
         }
-
-        async function classifyNews() {
+async function classifyNews() {
             const newsInput = document.getElementById('newsInput').value.trim();
             const resultDiv = document.getElementById('result');
             const submitBtn = document.getElementById('submitBtn');
@@ -455,62 +454,66 @@
                 return;
             }
             
-            resultDiv.className = 'result loading';
-            resultDiv.innerHTML = '<div class="spinner"></div>Connecting to API (this may take a moment on first request)...';
-            resultDiv.classList.remove('hidden');
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Processing...';
-            
-            const maxRetries = 5;
-            const retryDelay = 2000; // 2 seconds between retries
-            let lastError = null;
-            
-            for (let attempt = 1; attempt <= maxRetries; attempt++) {
-                try {
-                    resultDiv.innerHTML = `<div class="spinner"></div>Attempt ${attempt} of ${maxRetries}... ${attempt === 1 ? '(warming up Lambda)' : ''}`;
-                    
-                    const response = await fetch(API_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            query: {
-                                headline: newsInput
-                            }
-                        })
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    
-                    const data = await response.json();
-                    displayResult(newsInput, data);
-                    return; // Success! Exit function
-                    
-                } catch (error) {
-                    lastError = error;
-                    console.error(`Attempt ${attempt} failed:`, error);
-                    
-                    // If this isn't the last attempt, wait before retrying
-                    if (attempt < maxRetries) {
-                        await new Promise(resolve => setTimeout(resolve, retryDelay));
+            try {
+                resultDiv.className = 'result loading';
+                resultDiv.innerHTML = '<div class="spinner"></div>Connecting to API (this may take a moment on first request)...';
+                resultDiv.classList.remove('hidden');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Processing...';
+                
+                const maxRetries = 5;
+                const retryDelay = 2000; // 2 seconds between retries
+                let lastError = null;
+                
+                for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                    try {
+                        resultDiv.innerHTML = `<div class="spinner"></div>Attempt ${attempt} of ${maxRetries}... ${attempt === 1 ? '(warming up Lambda)' : ''}`;
+                        
+                        const response = await fetch(API_URL, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                query: {
+                                    headline: newsInput
+                                }
+                            })
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        
+                        const data = await response.json();
+                        displayResult(newsInput, data);
+                        return; // Success! Exit function
+                        
+                    } catch (error) {
+                        lastError = error;
+                        console.error(`Attempt ${attempt} failed:`, error);
+                        
+                        // If this isn't the last attempt, wait before retrying
+                        if (attempt < maxRetries) {
+                            await new Promise(resolve => setTimeout(resolve, retryDelay));
+                        }
                     }
                 }
+                
+                // All retries failed
+                let errorMsg = lastError.message;
+                if (lastError.message.includes('Failed to fetch')) {
+                    errorMsg = 'Unable to connect to API after multiple attempts. Please check your internet connection and try again.';
+                } else {
+                    errorMsg = `Connection failed after ${maxRetries} attempts: ${lastError.message}`;
+                }
+                showResult('Connection Error', errorMsg, true);
+                
+            } finally {
+                // Always re-enable button, even if there's an error
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Classify Headline';
             }
-            
-            // All retries failed
-            let errorMsg = lastError.message;
-            if (lastError.message.includes('Failed to fetch')) {
-                errorMsg = 'Unable to connect to API after multiple attempts. Please check your internet connection and try again.';
-            } else {
-                errorMsg = `Connection failed after ${maxRetries} attempts: ${lastError.message}`;
-            }
-            showResult('Connection Error', errorMsg, true);
-            
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Classify Headline';
         }
         
         function displayResult(input, data) {
