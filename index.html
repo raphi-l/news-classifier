@@ -525,7 +525,7 @@
                     resultHTML += `<span class="result-score">${confidence}% confidence</span><br><br>`;
                     
                     // Category mapping (adjust based on your model)
-                    const categories = ['Business', 'Sci/Tech', 'Sports', 'World'];
+                    const categories = ['Business', 'Science', 'Entertainment', 'Health'];
                     resultHTML += '<strong>All probabilities:</strong><br>';
                     probs.forEach((prob, idx) => {
                         const percentage = (prob * 100).toFixed(2);
